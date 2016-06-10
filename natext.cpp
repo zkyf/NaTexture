@@ -87,14 +87,14 @@ Mat natGenerate(Mat source, int width, int height, int size)
 			double min = 1E20;
 			Point minp = Point(-1, -1);
 			//cout << "can.size() = " << can.size() << endl;
-			Mat retL(size, size, CV_8UC3, Scalar::all(255));
-			Mat oriL(size, size, CV_8UC3, Scalar::all(255));
-			retL.at<Vec3b>(size / 2, size / 2)[0] = 0;
-			retL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			retL.at<Vec3b>(size / 2, size / 2)[2] = 255;
-			oriL.at<Vec3b>(size / 2, size / 2)[0] = 255;
-			oriL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			oriL.at<Vec3b>(size / 2, size / 2)[2] = 0;
+			//Mat retL(size, size, CV_8UC3, Scalar::all(255));
+			//Mat oriL(size, size, CV_8UC3, Scalar::all(255));
+			//retL.at<Vec3b>(size / 2, size / 2)[0] = 0;
+			//retL.at<Vec3b>(size / 2, size / 2)[1] = 0;
+			//retL.at<Vec3b>(size / 2, size / 2)[2] = 255;
+			//oriL.at<Vec3b>(size / 2, size / 2)[0] = 255;
+			//oriL.at<Vec3b>(size / 2, size / 2)[1] = 0;
+			//oriL.at<Vec3b>(size / 2, size / 2)[2] = 0;
 			int count = 0;
 			for (int p = 0; p < can.size(); p++)
 			{
@@ -183,7 +183,7 @@ Mat natGenerate(Mat source, int width, int height, int size)
 					}
 				}
 			}
-			Mat toshow = source.clone();
+			//Mat toshow = source.clone();
 			if (minp != Point(-1, -1))
 			{
 				ret.at<Vec3b>(i, j)[0] = source.at<Vec3b>(minp.y, minp.x)[0];
@@ -191,9 +191,9 @@ Mat natGenerate(Mat source, int width, int height, int size)
 				ret.at<Vec3b>(i, j)[2] = source.at<Vec3b>(minp.y, minp.x)[2];
 				x_source.at<int>(i, j) = minp.x;
 				y_source.at<int>(i, j) = minp.y;
-				toshow.at<Vec3b>(minp.y, minp.x)[0] = 0;
-				toshow.at<Vec3b>(minp.y, minp.x)[1] = 0;
-				toshow.at<Vec3b>(minp.y, minp.x)[2] = 255;
+				//toshow.at<Vec3b>(minp.y, minp.x)[0] = 0;
+				//toshow.at<Vec3b>(minp.y, minp.x)[1] = 0;
+				//toshow.at<Vec3b>(minp.y, minp.x)[2] = 255;
 			}
 			else
 			{
@@ -204,62 +204,62 @@ Mat natGenerate(Mat source, int width, int height, int size)
 			//cout << "End" << endl;
 			if (1)
 			{
-				for (int l = 0; l < pos; l++)
-				{
-					int cplx = minp.x + dx[l];
-					int cply = minp.y + dy[l];
-					int xx = j + dx[l];
-					int yy = i + dy[l];
-					if (xx < 0 || xx >= source.cols || yy < 0 || yy >= height)
-					{
-						retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[0] = 0;
-						retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[1] = 0;
-						retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[2] = 0;
-						continue;
-					}
+				//for (int l = 0; l < pos; l++)
+				//{
+				//	int cplx = minp.x + dx[l];
+				//	int cply = minp.y + dy[l];
+				//	int xx = j + dx[l];
+				//	int yy = i + dy[l];
+				//	if (xx < 0 || xx >= source.cols || yy < 0 || yy >= height)
+				//	{
+				//		retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[0] = 0;
+				//		retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[1] = 0;
+				//		retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[2] = 0;
+				//		continue;
+				//	}
 
-					int r1 = ret.at<Vec3b>(yy, xx)[0];
-					int g1 = ret.at<Vec3b>(yy, xx)[1];
-					int b1 = ret.at<Vec3b>(yy, xx)[2];
+				//	int r1 = ret.at<Vec3b>(yy, xx)[0];
+				//	int g1 = ret.at<Vec3b>(yy, xx)[1];
+				//	int b1 = ret.at<Vec3b>(yy, xx)[2];
 
-					retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[0] = r1;
-					retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[1] = g1;
-					retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[2] = b1;
-				}
+				//	retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[0] = r1;
+				//	retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[1] = g1;
+				//	retL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[2] = b1;
+				//}
 
-				for (int l = 0; l < pos; l++)
-				{
-					int cplx = minp.x + dx[l];
-					int cply = minp.y + dy[l];
-					int xx = j + dx[l];
-					int yy = i + dy[l];
-					if (cplx < 0 || cplx >= source.cols || cply < 0 || cply >= source.rows)
-					{
-						oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[0] = 0;
-						oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[1] = 0;
-						oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[2] = 0;
-						continue;
-					}
+				//for (int l = 0; l < pos; l++)
+				//{
+				//	int cplx = minp.x + dx[l];
+				//	int cply = minp.y + dy[l];
+				//	int xx = j + dx[l];
+				//	int yy = i + dy[l];
+				//	if (cplx < 0 || cplx >= source.cols || cply < 0 || cply >= source.rows)
+				//	{
+				//		oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[0] = 0;
+				//		oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[1] = 0;
+				//		oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[2] = 0;
+				//		continue;
+				//	}
 
-					int r2 = source.at<Vec3b>(cply, cplx)[0];
-					int g2 = source.at<Vec3b>(cply, cplx)[1];
-					int b2 = source.at<Vec3b>(cply, cplx)[2];
+				//	int r2 = source.at<Vec3b>(cply, cplx)[0];
+				//	int g2 = source.at<Vec3b>(cply, cplx)[1];
+				//	int b2 = source.at<Vec3b>(cply, cplx)[2];
 
-					oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[0] = r2;
-					oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[1] = g2;
-					oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[2] = b2;
-				}
+				//	oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[0] = r2;
+				//	oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[1] = g2;
+				//	oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[2] = b2;
+				//}
 
 				Mat ret2s;
 				resize(ret, ret2s, ret.size() * 3, 0.0, 0.0, CV_INTER_NN);
-				resize(toshow, toshow, toshow.size() * 3, 0.0, 0.0, CV_INTER_NN);
-				resize(retL, retL, retL.size() * 25, 0.0, 0.0, CV_INTER_NN);
-				resize(oriL, oriL, oriL.size() * 25, 0.0, 0.0, CV_INTER_NN);
-				imshow("Now ret", ret2s);
+				//resize(toshow, toshow, toshow.size() * 3, 0.0, 0.0, CV_INTER_NN);
+				//resize(retL, retL, retL.size() * 25, 0.0, 0.0, CV_INTER_NN);
+				//resize(oriL, oriL, oriL.size() * 25, 0.0, 0.0, CV_INTER_NN);
+				//imshow("Now ret", ret2s);
 				//imshow("From", toshow);
 				//imshow("retL", retL);
 				//imshow("oriL", oriL);
-				waitKey(1);
+				//waitKey(1);
 			}
 		}
 	}
@@ -298,14 +298,14 @@ Mat natGenerate(Mat source, int width, int height, int size)
 			double min = 1E20;
 			Point minp = Point(-1, -1);
 			//cout << "can.size() = " << can.size() << endl;
-			Mat retL(size, size, CV_8UC3, Scalar::all(255));
-			Mat oriL(size, size, CV_8UC3, Scalar::all(255));
-			retL.at<Vec3b>(size / 2, size / 2)[0] = 0;
-			retL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			retL.at<Vec3b>(size / 2, size / 2)[2] = 255;
-			oriL.at<Vec3b>(size / 2, size / 2)[0] = 255;
-			oriL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			oriL.at<Vec3b>(size / 2, size / 2)[2] = 0;
+			//Mat retL(size, size, CV_8UC3, Scalar::all(255));
+			//Mat oriL(size, size, CV_8UC3, Scalar::all(255));
+			//retL.at<Vec3b>(size / 2, size / 2)[0] = 0;
+			//retL.at<Vec3b>(size / 2, size / 2)[1] = 0;
+			//retL.at<Vec3b>(size / 2, size / 2)[2] = 255;
+			//oriL.at<Vec3b>(size / 2, size / 2)[0] = 255;
+			//oriL.at<Vec3b>(size / 2, size / 2)[1] = 0;
+			//oriL.at<Vec3b>(size / 2, size / 2)[2] = 0;
 
 			int count = 0;
 			for (int p = 0; p < can.size(); p++)
@@ -393,7 +393,7 @@ Mat natGenerate(Mat source, int width, int height, int size)
 					}
 				}
 			}
-			Mat toshow = source.clone();
+			//Mat toshow = source.clone();
 			if (minp != Point(-1, -1))
 			{
 				ret.at<Vec3b>(i, j)[0] = source.at<Vec3b>(minp.y, minp.x)[0];
@@ -401,9 +401,9 @@ Mat natGenerate(Mat source, int width, int height, int size)
 				ret.at<Vec3b>(i, j)[2] = source.at<Vec3b>(minp.y, minp.x)[2];
 				x_source.at<int>(i, j) = minp.x;
 				y_source.at<int>(i, j) = minp.y;
-				toshow.at<Vec3b>(minp.y, minp.x)[0] = 0;
-				toshow.at<Vec3b>(minp.y, minp.x)[1] = 0;
-				toshow.at<Vec3b>(minp.y, minp.x)[2] = 255;
+				//toshow.at<Vec3b>(minp.y, minp.x)[0] = 0;
+				//toshow.at<Vec3b>(minp.y, minp.x)[1] = 0;
+				//toshow.at<Vec3b>(minp.y, minp.x)[2] = 255;
 			}
 			else
 			{
@@ -416,8 +416,8 @@ Mat natGenerate(Mat source, int width, int height, int size)
 			{
 				Mat ret2s;
 				resize(ret, ret2s, ret.size() * 3, 0.0, 0.0, CV_INTER_NN);
-				imshow("Now ret", ret2s.t());
-				waitKey(1);
+				//imshow("Now ret", ret2s.t());
+				//waitKey(1);
 			}
 		}
 	}
@@ -454,14 +454,14 @@ Mat natGenerate(Mat source, int width, int height, int size)
 			double min = 1E20;
 			Point minp = Point(-1, -1);
 			//cout << "can.size() = " << can.size() << endl;
-			Mat retL(size, size, CV_8UC3, Scalar::all(255));
-			Mat oriL(size, size, CV_8UC3, Scalar::all(255));
-			retL.at<Vec3b>(size / 2, size / 2)[0] = 0;
-			retL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			retL.at<Vec3b>(size / 2, size / 2)[2] = 255;
-			oriL.at<Vec3b>(size / 2, size / 2)[0] = 255;
-			oriL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			oriL.at<Vec3b>(size / 2, size / 2)[2] = 0;
+			//Mat retL(size, size, CV_8UC3, Scalar::all(255));
+			//Mat oriL(size, size, CV_8UC3, Scalar::all(255));
+			//retL.at<Vec3b>(size / 2, size / 2)[0] = 0;
+			//retL.at<Vec3b>(size / 2, size / 2)[1] = 0;
+			//retL.at<Vec3b>(size / 2, size / 2)[2] = 255;
+			//oriL.at<Vec3b>(size / 2, size / 2)[0] = 255;
+			//oriL.at<Vec3b>(size / 2, size / 2)[1] = 0;
+			//oriL.at<Vec3b>(size / 2, size / 2)[2] = 0;
 
 			int count = 0;
 			for (int p = 0; p < can.size(); p++)
@@ -549,7 +549,7 @@ Mat natGenerate(Mat source, int width, int height, int size)
 					}
 				}
 			}
-			Mat toshow = source.clone();
+			//Mat toshow = source.clone();
 			if (minp != Point(-1, -1))
 			{
 				ret.at<Vec3b>(i, j)[0] = source.at<Vec3b>(minp.y, minp.x)[0];
@@ -557,9 +557,9 @@ Mat natGenerate(Mat source, int width, int height, int size)
 				ret.at<Vec3b>(i, j)[2] = source.at<Vec3b>(minp.y, minp.x)[2];
 				x_source.at<int>(i, j) = minp.x;
 				y_source.at<int>(i, j) = minp.y;
-				toshow.at<Vec3b>(minp.y, minp.x)[0] = 0;
-				toshow.at<Vec3b>(minp.y, minp.x)[1] = 0;
-				toshow.at<Vec3b>(minp.y, minp.x)[2] = 255;
+				//toshow.at<Vec3b>(minp.y, minp.x)[0] = 0;
+				//toshow.at<Vec3b>(minp.y, minp.x)[1] = 0;
+				//toshow.at<Vec3b>(minp.y, minp.x)[2] = 255;
 			}
 			else
 			{
@@ -573,14 +573,14 @@ Mat natGenerate(Mat source, int width, int height, int size)
 				Mat ret2s;
 				flip(ret, ret2s, 0);
 				resize(ret2s, ret2s, ret.size() * 3, 0.0, 0.0, CV_INTER_NN);
-				imshow("Now ret", ret2s.t());
-				waitKey(1);
+				//imshow("Now ret", ret2s.t());
+				//waitKey(1);
 			}
 		}
 	}
 
 
-	waitKey();
+	//waitKey();
 
 	return ret;
 }

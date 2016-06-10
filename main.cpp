@@ -9,9 +9,9 @@ using namespace cv;
 
 int main()
 {
-	Mat input = imread("test-bark.png");
+	Mat input = imread("test-flower.png");
 	input.convertTo(input, CV_8UC3);
-	Mat ret = natGenerate(input, 400, 400, 11);
-	//imshow("ret", ret);
-	//waitKey(0);
+	Mat ret = natGenerate(input, 300, 300, 11);
+	imshow("ret", ret);
+	waitKey(0);
 }
