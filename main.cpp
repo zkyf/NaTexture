@@ -11,7 +11,7 @@ int main()
 {
 	Mat input = imread("test.png");
 	input.convertTo(input, CV_8UC3);
-	Mat ret = natGenerate(input, 400, 400, 5);
+	Mat ret = natGenerate(input, 150, 150, 3);
 	//imshow("ret", ret);
 	//waitKey(0);
 }
