@@ -8,6 +8,6 @@ using namespace std;
 #ifndef _SYNTHESIZING_NATURAL_TEXTURES
 #define _SYNTHESIZING_NATURAL_TEXTURES
 
-Mat natGenerate(Mat source, int width, int height, int size = 3);
+Mat natGenerate(Mat source, Mat mask, int size = 3);
 
 #endif

@@ -16,73 +16,71 @@ double natGaussian(double x, double sigma = 1.0, double mu = 0.0)
 	return exp(-(x - mu)*(x - mu) / (2 * sigma*sigma)) / (sigma*sqrt(2 * M_PI));
 }
 
-Mat natGenerate(Mat source, int width, int height, int size)
+Mat natGenerate(Mat source, Mat mask, int size)
 {
-	const int delta = 5;
+	const int delta = size*2;
 
 	size = size / 2 * 2 + 1;
+	int height = source.rows;
+	int width = source.cols;
 	srand((unsigned)time(0));
-	int pos = (size*size - 1) / 2;
-	int *dx = new int[pos];
-	int *dy = new int[pos];
-	int count = 0;
-	for (int i = -(size - 1) / 2; i <= 0; i++)
-	{
-		for (int j = -(size - 1) / 2; j <= (size - 1) / 2; j++)
-		{
-			if (i == 0 && j == 0) break;
-			dy[count] = i;
-			dx[count] = j;
-			count++;
-		}
-	}
 
-	for (int i = 0; i < pos; i++)
-	{
-		cout << dy[i] << ", " << dx[i] << endl;
-	}
-
-	Mat ret(height, width, CV_8UC3, Scalar::all(0));
+	Mat ret = source.clone();
 	Mat x_source(height, width, CV_32S, Scalar::all(0));
 	Mat y_source(height, width, CV_32S, Scalar::all(0));
-
-	for (int i = 0; i < source.rows - delta; i++)
+	Mat valid = mask.clone();
+	int left = width, right = 0, top = height, bottom = 0;
+	for (int i = 0; i < source.rows; i++)
 	{
-		for (int j = 0; j < source.cols - delta; j++)
+		for (int j = 0; j < source.cols; j++)
 		{
-			ret.at<Vec3b>(i, j)[0] = source.at<Vec3b>(i, j)[0];
-			ret.at<Vec3b>(i, j)[1] = source.at<Vec3b>(i, j)[1];
-			ret.at<Vec3b>(i, j)[2] = source.at<Vec3b>(i, j)[2];
-			x_source.at<int>(i, j) = j;
-			y_source.at<int>(i, j) = i;
+			if (mask.at<uchar>(i, j) == 0)
+			{
+				x_source.at<uchar>(i, j) = j;
+				y_source.at<uchar>(i, j) = i;
+			}
+			else
+			{
+				ret.at<Vec3b>(i, j)[0] = 0;
+				ret.at<Vec3b>(i, j)[1] = 0;
+				ret.at<Vec3b>(i, j)[2] = 0;
+				if (i < top) top = i;
+				if (i>bottom) bottom = i;
+				if (j < left) left = j;
+				if (j>right) right = j;
+			}
 		}
 	}
 	//imshow("random ret", ret);
 	//waitKey(0);
 
-	for (int i = source.rows - delta; i < height; i++)
+	for (int i = top; i <= bottom; i++)
 	{
-		for (int j = 0; j < source.cols - delta; j++)
+		for (int j = left; j <= right; j++)
 		{ 
+			if (mask.at<uchar>(i, j) == 0) continue;
 			//cout << "Ret: " << i << ", " << j << endl;
 			vector<Point> can;
-			for (int p = 0; p < pos; p++)
+			for (int dy = -size / 2; dy <= size / 2; dy++)
 			{
-				int yy = i + dy[p];
-				int xx = j + dx[p];
-				if (xx < 0 || xx >= width || yy < 0 || yy >= height)
+				for (int dx = -size / 2; dx <= size / 2; dx++)
 				{
-					continue;
+					int yy = i + dy;
+					int xx = j + dx;
+					if (xx < 0 || xx >= width || yy < 0 || yy >= height)
+					{
+						continue;
+					}
+					int cx = x_source.at<int>(yy, xx) - dx;
+					int cy = y_source.at<int>(yy, xx) - dy;
+					if (cx < 0 || cx >= width || cy < 0 || cy >= height)
+					{
+						continue;
+					}
+					if (mask.at<uchar>(yy, xx) > 0) continue;
+					//cout << "  Canidate " << cy << ", " << cx << endl;
+					can.push_back(Point(cx, cy));
 				}
-				int cx = x_source.at<int>(yy, xx) - dx[p];
-				int cy = y_source.at<int>(yy, xx) - dy[p];
-				//cout << "  cy: " << cy << ", cx: " << cx << endl;
-				if (cx < 0 || cx >= source.cols || cy < 0 || cy >= source.rows)
-				{
-					continue;
-				}
-				//cout << "  Canidate " << cy << ", " << cx << endl;
-				can.push_back(Point(cx, cy));
 			}
 			double min = 1E20;
 			Point minp = Point(-1, -1);
@@ -103,28 +101,34 @@ Mat natGenerate(Mat source, int width, int height, int size)
 				double sum = 0;
 				int cpx = can[p].x;
 				int cpy = can[p].y;
-				for (int l = 0; l < pos; l++)
+				if (mask.at<uchar>(cpy, cpx) > 0) continue;
+				for (int dy = -size / 2; dy <= size / 2; dy++)
 				{
-					int cplx = cpx + dx[l];
-					int cply = cpy + dy[l];
-					int xx = j + dx[l];
-					int yy = i + dy[l];
-					if (cplx < 0 || cplx >= source.cols - 1 || cply < 0 || cply >= source.rows - 1)
+					for (int dx = -size / 2; dx <= size / 2; dx++)
 					{
-						break;
+						int cplx = cpx + dx;
+						int cply = cpy + dy;
+						int xx = j + dx;
+						int yy = i + dy;
+						if (cplx < 0 || cplx >= width || cply < 0 || cply >= height)
+						{
+							continue;
+						}
+						if (xx < 0 || xx >= width || yy < 0 || yy >= height)
+						{
+							continue;
+						}
+						if (mask.at<uchar>(cply, cplx) > 0) continue;
+						if (valid.at<uchar>(yy, xx) > 0) continue;
+						int r1 = ret.at<Vec3b>(yy, xx)[0], r2 = source.at<Vec3b>(cply, cplx)[0];
+						int g1 = ret.at<Vec3b>(yy, xx)[1], g2 = source.at<Vec3b>(cply, cplx)[1];
+						int b1 = ret.at<Vec3b>(yy, xx)[2], b2 = source.at<Vec3b>(cply, cplx)[2];
+						double d = sqrt(dx * dx / (size * size / 4)
+														+ dy * dy / (size * size / 4));
+						double ratio = 1 - natGaussian(d, 0.4);
+						sum += ((r1 - r2)*(r1 - r2) + (g1 - g2)*(g1 - g2) + (b1 - b2)*(b1 - b2)) * ratio;
+						ncount += ratio;
 					}
-					if (xx < 0 || xx >= source.cols || yy < 0 || yy >= height)
-					{
-						continue;
-					}
-					int r1 = ret.at<Vec3b>(yy, xx)[0], r2 = source.at<Vec3b>(cply, cplx)[0];
-					int g1 = ret.at<Vec3b>(yy, xx)[1], g2 = source.at<Vec3b>(cply, cplx)[1];
-					int b1 = ret.at<Vec3b>(yy, xx)[2], b2 = source.at<Vec3b>(cply, cplx)[2];
-					double d = sqrt(dx[l] * dx[l] / (size * size / 4)
-													+ dy[l] * dy[l] / (size * size / 4));
-					double ratio = 1 - natGaussian(d, 0.4);
-					sum += ((r1 - r2)*(r1 - r2) + (g1 - g2)*(g1 - g2) + (b1 - b2)*(b1 - b2)) * ratio;
-					ncount += ratio;
 				}
 				if (ncount>0)
 				{
@@ -138,44 +142,53 @@ Mat natGenerate(Mat source, int width, int height, int size)
 					minp = Point(cpx, cpy);
 				}
 			}
-
-			if (minp == Point(-1, -1) || count < size)
+			//minp = Point(-1, -1);
+			if (minp == Point(-1, -1))
 			{
-				cout << "No sum" << endl;
-				for (int cpy = delta; cpy < source.rows - delta; cpy++)
+				cout << "No sum @" << j << ", " << i << endl;
+				min = 1E20;
+				for (int cpy = i - delta; cpy <= i + delta; cpy++)
 				{
-					for (int cpx = delta; cpx < source.rows - delta; cpx++)
+					if (cpy >= height) break;
+					for (int cpx = j - delta; cpx <= j + delta; cpx++)
 					{
+						if (cpx >= width) break;
+						if (mask.at<uchar>(cpy, cpx) > 0) continue;
 						double ncount = 0;
 						double sum = 0;
-						for (int l = 0; l < pos; l++)
+						for (int dy = -size / 2; dy <= size / 2; dy++)
 						{
-							int cplx = cpx + dx[l];
-							int cply = cpy + dy[l];
-							int xx = j + dx[l];
-							int yy = i + dy[l];
-							if (cplx < delta || cplx >= source.cols - delta || cply < delta || cply >= source.rows - delta)
+							for (int dx = -size / 2; dx <= size / 2; dx++)
 							{
-								break;
+								int cplx = cpx + dx;
+								int cply = cpy + dy;
+								int xx = j + dx;
+								int yy = i + dy;
+								if (cplx < 0 || cplx >= width || cply < 0 || cply >= height)
+								{
+									continue;
+								}
+								if (xx < 0 || xx >= width || yy < 0 || yy >= height)
+								{
+									continue;
+								}
+								if (mask.at<uchar>(cply, cplx) > 0) continue;
+								if (valid.at<uchar>(yy, xx) > 0) continue;
+								int r1 = ret.at<Vec3b>(yy, xx)[0], r2 = source.at<Vec3b>(cply, cplx)[0];
+								int g1 = ret.at<Vec3b>(yy, xx)[1], g2 = source.at<Vec3b>(cply, cplx)[1];
+								int b1 = ret.at<Vec3b>(yy, xx)[2], b2 = source.at<Vec3b>(cply, cplx)[2];
+								double d = sqrt(dx * dx / (size * size / 4) + dy * dy / (size * size / 4));
+								double ratio = 1 - natGaussian(d, 0.5);
+								sum += ((r1 - r2)*(r1 - r2) + (g1 - g2)*(g1 - g2) + (b1 - b2)*(b1 - b2)) * ratio;
+								ncount += ratio;
 							}
-							if (xx < 0 || xx >= source.cols || yy < 0 || yy >= height)
-							{
-								continue;
-							}
-							int r1 = ret.at<Vec3b>(yy, xx)[0], r2 = source.at<Vec3b>(cply, cplx)[0];
-							int g1 = ret.at<Vec3b>(yy, xx)[1], g2 = source.at<Vec3b>(cply, cplx)[1];
-							int b1 = ret.at<Vec3b>(yy, xx)[2], b2 = source.at<Vec3b>(cply, cplx)[2];
-							double d = sqrt(dx[l] * dx[l] / (size * size / 4) + dy[l] * dy[l] / (size * size / 4));
-							double ratio = 1 - natGaussian(d, 0.5);
-							sum += ((r1 - r2)*(r1 - r2) + (g1 - g2)*(g1 - g2) + (b1 - b2)*(b1 - b2)) * ratio;
-							ncount += ratio;
 						}
 						if (ncount>0)
 						{
 							sum /= ncount;
 						}
 						//cout << "   sum = " << sum << endl;
-						if (min > sum && ncount>0)
+						if (min > sum && ncount > 0 && mask.at<uchar>(cpy, cpx) == 0)
 						{
 							min = sum;
 							minp = Point(cpx, cpy);
@@ -191,6 +204,7 @@ Mat natGenerate(Mat source, int width, int height, int size)
 				ret.at<Vec3b>(i, j)[2] = source.at<Vec3b>(minp.y, minp.x)[2];
 				x_source.at<int>(i, j) = minp.x;
 				y_source.at<int>(i, j) = minp.y;
+				valid.at<uchar>(i, j) = 0;
 				//toshow.at<Vec3b>(minp.y, minp.x)[0] = 0;
 				//toshow.at<Vec3b>(minp.y, minp.x)[1] = 0;
 				//toshow.at<Vec3b>(minp.y, minp.x)[2] = 255;
@@ -250,12 +264,17 @@ Mat natGenerate(Mat source, int width, int height, int size)
 				//	oriL.at<Vec3b>(dy[l] + size / 2, dx[l] + size / 2)[2] = b2;
 				//}
 
-				Mat ret2s;
-				resize(ret, ret2s, ret.size() * 3, 0.0, 0.0, CV_INTER_NN);
+				//Mat ret2s;
+				//resize(ret, ret2s, ret.size() * 3, 0.0, 0.0, CV_INTER_NN);
 				//resize(toshow, toshow, toshow.size() * 3, 0.0, 0.0, CV_INTER_NN);
 				//resize(retL, retL, retL.size() * 25, 0.0, 0.0, CV_INTER_NN);
 				//resize(oriL, oriL, oriL.size() * 25, 0.0, 0.0, CV_INTER_NN);
-				//imshow("Now ret", ret2s);
+				//Mat toshow = ret.clone();
+				//toshow.at<Vec3b>(minp)[0] = 0;
+				//toshow.at<Vec3b>(minp)[1] = 0;
+				//toshow.at<Vec3b>(minp)[2] = 255;
+				//imshow("Now ret", toshow);
+				//cout << (int)mask.at<uchar>(minp) << endl;
 				//imshow("From", toshow);
 				//imshow("retL", retL);
 				//imshow("oriL", oriL);
@@ -263,324 +282,5 @@ Mat natGenerate(Mat source, int width, int height, int size)
 			}
 		}
 	}
-
-	ret = ret.t();
-	x_source = x_source.t();
-	y_source = y_source.t();
-	int t = height;
-	height = width;
-	width = t;
-
-	for (int i = source.cols - delta; i < height; i++)
-	{
-		for (int j = 0; j < width; j++)
-		{
-			//cout << "Ret: " << i << ", " << j << endl;
-			vector<Point> can;
-			for (int p = 0; p < pos; p++)
-			{
-				int yy = i + dy[p];
-				int xx = j + dx[p];
-				if (xx < 0 || xx >= width || yy < 0 || yy >= height)
-				{
-					continue;
-				}
-				int cx = x_source.at<int>(yy, xx) - dy[p];
-				int cy = y_source.at<int>(yy, xx) - dx[p];
-				//cout << "  cy: " << cy << ", cx: " << cx << endl;
-				if (cx < 0 || cx >= source.cols || cy < 0 || cy >= source.rows)
-				{
-					continue;
-				}
-				//cout << "  Canidate " << cy << ", " << cx << endl;
-				can.push_back(Point(cx, cy));
-			}
-			double min = 1E20;
-			Point minp = Point(-1, -1);
-			//cout << "can.size() = " << can.size() << endl;
-			//Mat retL(size, size, CV_8UC3, Scalar::all(255));
-			//Mat oriL(size, size, CV_8UC3, Scalar::all(255));
-			//retL.at<Vec3b>(size / 2, size / 2)[0] = 0;
-			//retL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			//retL.at<Vec3b>(size / 2, size / 2)[2] = 255;
-			//oriL.at<Vec3b>(size / 2, size / 2)[0] = 255;
-			//oriL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			//oriL.at<Vec3b>(size / 2, size / 2)[2] = 0;
-
-			int count = 0;
-			for (int p = 0; p < can.size(); p++)
-			{
-				//cout << "  Calculating candidate #" << p << " @ " << cpy << ", " << cpx << endl;
-				double ncount = 0;
-				double sum = 0;
-				int cpx = can[p].x;
-				int cpy = can[p].y;
-				for (int l = 0; l < pos; l++)
-				{
-					int cplx = cpx + dy[l];
-					int cply = cpy + dx[l];
-					int xx = j + dx[l];
-					int yy = i + dy[l];
-					if (cplx < 0 || cplx >= source.cols || cply < 0 || cply >= source.rows)
-					{
-						break;
-					}
-					if (xx < 0 || xx >= width || yy < 0 || yy >= height)
-					{
-						continue;
-					}
-					int r1 = ret.at<Vec3b>(yy, xx)[0], r2 = source.at<Vec3b>(cply, cplx)[0];
-					int g1 = ret.at<Vec3b>(yy, xx)[1], g2 = source.at<Vec3b>(cply, cplx)[1];
-					int b1 = ret.at<Vec3b>(yy, xx)[2], b2 = source.at<Vec3b>(cply, cplx)[2];
-					double d = sqrt(dx[l] * dx[l] / (size * size / 4) + dy[l] * dy[l] / (size * size / 4));
-					double ratio = 1 - natGaussian(d, 0.5);
-					sum += ((r1 - r2)*(r1 - r2) + (g1 - g2)*(g1 - g2) + (b1 - b2)*(b1 - b2)) * ratio;
-					ncount += ratio;
-				}
-				if (ncount>0)
-				{
-					sum /= ncount;
-					count++;
-				}
-				//cout << "   sum = " << sum << endl;
-				if (min > sum && ncount>0)
-				{
-					min = sum;
-					minp = Point(cpx, cpy);
-				}
-			}
-
-			if (minp == Point(-1, -1) || count < size)
-			{
-				for (int cpy = delta; cpy < source.rows - delta; cpy++)
-				{
-					for (int cpx = delta; cpx < source.cols - delta; cpx++)
-					{
-						double ncount = 0;
-						double sum = 0;
-						for (int l = 0; l < pos; l++)
-						{
-							int cplx = cpx + dy[l];
-							int cply = cpy + dx[l];
-							int xx = j + dx[l];
-							int yy = i + dy[l];
-							if (cplx < 0 || cplx >= source.cols || cply < 0 || cply >= source.rows)
-							{
-								break;
-							}
-							if (xx < 0 || xx >= width || yy < 0 || yy >= height)
-							{
-								continue;
-							}
-							int r1 = ret.at<Vec3b>(yy, xx)[0], r2 = source.at<Vec3b>(cply, cplx)[0];
-							int g1 = ret.at<Vec3b>(yy, xx)[1], g2 = source.at<Vec3b>(cply, cplx)[1];
-							int b1 = ret.at<Vec3b>(yy, xx)[2], b2 = source.at<Vec3b>(cply, cplx)[2];
-							double d = sqrt(dx[l] * dx[l] / (size * size / 4) + dy[l] * dy[l] / (size * size / 4));
-							double ratio = 1 - natGaussian(d, 0.5);
-							sum += ((r1 - r2)*(r1 - r2) + (g1 - g2)*(g1 - g2) + (b1 - b2)*(b1 - b2)) * ratio;
-							ncount += ratio;
-						}
-						if (ncount>0)
-						{
-							sum /= ncount;
-						}
-						//cout << "   sum = " << sum << endl;
-						if (min > sum && ncount>0)
-						{
-							min = sum;
-							minp = Point(cpx, cpy);
-						}
-					}
-				}
-			}
-			//Mat toshow = source.clone();
-			if (minp != Point(-1, -1))
-			{
-				ret.at<Vec3b>(i, j)[0] = source.at<Vec3b>(minp.y, minp.x)[0];
-				ret.at<Vec3b>(i, j)[1] = source.at<Vec3b>(minp.y, minp.x)[1];
-				ret.at<Vec3b>(i, j)[2] = source.at<Vec3b>(minp.y, minp.x)[2];
-				x_source.at<int>(i, j) = minp.x;
-				y_source.at<int>(i, j) = minp.y;
-				//toshow.at<Vec3b>(minp.y, minp.x)[0] = 0;
-				//toshow.at<Vec3b>(minp.y, minp.x)[1] = 0;
-				//toshow.at<Vec3b>(minp.y, minp.x)[2] = 255;
-			}
-			else
-			{
-				ret.at<Vec3b>(i, j)[0] = 0;
-				ret.at<Vec3b>(i, j)[1] = 0;
-				ret.at<Vec3b>(i, j)[2] = 255;
-			}
-			//cout << "End" << endl;
-			if (1)
-			{
-				Mat ret2s;
-				resize(ret, ret2s, ret.size() * 3, 0.0, 0.0, CV_INTER_NN);
-				//imshow("Now ret", ret2s.t());
-				//waitKey(1);
-			}
-		}
-	}
-
-	
-	flip(ret, ret, 0);
-	flip(x_source, x_source, 0);
-	flip(y_source, y_source, 0);
-
-	for (int i = height - size; i < height; i++)
-	{
-		for (int j = source.cols; j < width; j++)
-		{
-			//cout << "Ret: " << i << ", " << j << endl;
-			vector<Point> can;
-			for (int p = 0; p < pos; p++)
-			{
-				int yy = i + dy[p];
-				int xx = j + dx[p];
-				if (xx < 0 || xx >= width || yy < 0 || yy >= height)
-				{
-					continue;
-				}
-				int cx = x_source.at<int>(yy, xx) + dy[p];
-				int cy = y_source.at<int>(yy, xx) - dx[p];
-				//cout << "  cy: " << cy << ", cx: " << cx << endl;
-				if (cx < 0 || cx >= source.cols || cy < 0 || cy >= source.rows)
-				{
-					continue;
-				}
-				//cout << "  Canidate " << cy << ", " << cx << endl;
-				can.push_back(Point(cx, cy));
-			}
-			double min = 1E20;
-			Point minp = Point(-1, -1);
-			//cout << "can.size() = " << can.size() << endl;
-			//Mat retL(size, size, CV_8UC3, Scalar::all(255));
-			//Mat oriL(size, size, CV_8UC3, Scalar::all(255));
-			//retL.at<Vec3b>(size / 2, size / 2)[0] = 0;
-			//retL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			//retL.at<Vec3b>(size / 2, size / 2)[2] = 255;
-			//oriL.at<Vec3b>(size / 2, size / 2)[0] = 255;
-			//oriL.at<Vec3b>(size / 2, size / 2)[1] = 0;
-			//oriL.at<Vec3b>(size / 2, size / 2)[2] = 0;
-
-			int count = 0;
-			for (int p = 0; p < can.size(); p++)
-			{
-				//cout << "  Calculating candidate #" << p << " @ " << cpy << ", " << cpx << endl;
-				double ncount = 0;
-				double sum = 0;
-				int cpx = can[p].x;
-				int cpy = can[p].y;
-				for (int l = 0; l < pos; l++)
-				{
-					int cplx = cpx - dy[l];
-					int cply = cpy + dx[l];
-					int xx = j + dx[l];
-					int yy = i + dy[l];
-					if (cplx < 0 || cplx >= source.cols || cply < 0 || cply >= source.rows)
-					{
-						break;
-					}
-					if (xx < 0 || xx >= width || yy < 0 || yy >= height)
-					{
-						continue;
-					}
-					int r1 = ret.at<Vec3b>(yy, xx)[0], r2 = source.at<Vec3b>(cply, cplx)[0];
-					int g1 = ret.at<Vec3b>(yy, xx)[1], g2 = source.at<Vec3b>(cply, cplx)[1];
-					int b1 = ret.at<Vec3b>(yy, xx)[2], b2 = source.at<Vec3b>(cply, cplx)[2];
-					double d = sqrt(dx[l] * dx[l] / (size * size / 4) + dy[l] * dy[l] / (size * size / 4));
-					double ratio = 1 - natGaussian(d, 0.5);
-					sum += ((r1 - r2)*(r1 - r2) + (g1 - g2)*(g1 - g2) + (b1 - b2)*(b1 - b2)) * ratio;
-					ncount += ratio;
-				}
-				if (ncount>0)
-				{
-					sum /= ncount;
-					count++;
-				}
-				//cout << "   sum = " << sum << endl;
-				if (min > sum && ncount>0)
-				{
-					min = sum;
-					minp = Point(cpx, cpy);
-				}
-			}
-
-			if (minp == Point(-1, -1) || count < size)
-			{
-				for (int cpy = delta; cpy < source.rows - delta; cpy++)
-				{
-					for (int cpx = delta; cpx < source.cols - delta; cpx++)
-					{
-						double ncount = 0;
-						double sum = 0;
-						for (int l = 0; l < pos; l++)
-						{
-							int cplx = cpx - dy[l];
-							int cply = cpy + dx[l];
-							int xx = j + dx[l];
-							int yy = i + dy[l];
-							if (cplx < 0 || cplx >= source.cols || cply < 0 || cply >= source.rows)
-							{
-								break;
-							}
-							if (xx < 0 || xx >= width || yy < 0 || yy >= height)
-							{
-								continue;
-							}
-							int r1 = ret.at<Vec3b>(yy, xx)[0], r2 = source.at<Vec3b>(cply, cplx)[0];
-							int g1 = ret.at<Vec3b>(yy, xx)[1], g2 = source.at<Vec3b>(cply, cplx)[1];
-							int b1 = ret.at<Vec3b>(yy, xx)[2], b2 = source.at<Vec3b>(cply, cplx)[2];
-							double d = sqrt(dx[l] * dx[l] / (size * size / 4) + dy[l] * dy[l] / (size * size / 4));
-							double ratio = 1 - natGaussian(d, 0.5);
-							sum += ((r1 - r2)*(r1 - r2) + (g1 - g2)*(g1 - g2) + (b1 - b2)*(b1 - b2)) * ratio;
-							ncount += ratio;
-						}
-						if (ncount>0)
-						{
-							sum /= ncount;
-						}
-						//cout << "   sum = " << sum << endl;
-						if (min > sum && ncount>0)
-						{
-							min = sum;
-							minp = Point(cpx, cpy);
-						}
-					}
-				}
-			}
-			//Mat toshow = source.clone();
-			if (minp != Point(-1, -1))
-			{
-				ret.at<Vec3b>(i, j)[0] = source.at<Vec3b>(minp.y, minp.x)[0];
-				ret.at<Vec3b>(i, j)[1] = source.at<Vec3b>(minp.y, minp.x)[1];
-				ret.at<Vec3b>(i, j)[2] = source.at<Vec3b>(minp.y, minp.x)[2];
-				x_source.at<int>(i, j) = minp.x;
-				y_source.at<int>(i, j) = minp.y;
-				//toshow.at<Vec3b>(minp.y, minp.x)[0] = 0;
-				//toshow.at<Vec3b>(minp.y, minp.x)[1] = 0;
-				//toshow.at<Vec3b>(minp.y, minp.x)[2] = 255;
-			}
-			else
-			{
-				ret.at<Vec3b>(i, j)[0] = 0;
-				ret.at<Vec3b>(i, j)[1] = 0;
-				ret.at<Vec3b>(i, j)[2] = 255;
-			}
-			//cout << "End" << endl;
-			if (1)
-			{
-				Mat ret2s;
-				flip(ret, ret2s, 0);
-				resize(ret2s, ret2s, ret.size() * 3, 0.0, 0.0, CV_INTER_NN);
-				//imshow("Now ret", ret2s.t());
-				//waitKey(1);
-			}
-		}
-	}
-
-
-	//waitKey();
-
 	return ret;
 }
