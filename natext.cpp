@@ -36,8 +36,8 @@ Mat natGenerate(Mat source, Mat mask, int size)
 		{
 			if (mask.at<uchar>(i, j) == 0)
 			{
-				x_source.at<uchar>(i, j) = j;
-				y_source.at<uchar>(i, j) = i;
+				x_source.at<int>(i, j) = j;
+				y_source.at<int>(i, j) = i;
 			}
 			else
 			{
