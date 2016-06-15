@@ -10,7 +10,7 @@ using namespace cv;
 
 int main()
 {
-	Mat input = imread("test-comp.png");
+	Mat input = imread("test-comp.jpg");
 	Mat mask = getMask(input);
   //Mat mask = imread("mask.bmp");
   //imwrite("mask.bmp", mask);
